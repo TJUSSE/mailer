@@ -1,0 +1,27 @@
+{
+  "name": "mailer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node mailer.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TJUSSE/mailer.git"
+  },
+  "author": "SummerWish",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TJUSSE/mailer/issues"
+  },
+  "homepage": "https://github.com/TJUSSE/mailer#readme",
+  "dependencies": {
+    "amqp": "^0.2.4",
+    "async": "^1.3.0",
+    "js-yaml": "^3.3.1",
+    "limiter": "^1.0.5",
+    "nodemailer": "^1.4.0",
+    "winston": "^1.0.1"
+  }
+}
