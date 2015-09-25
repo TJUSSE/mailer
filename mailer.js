@@ -1,3 +1,5 @@
+/*global GLOBAL, debug, info, error */
+
 // load configurations
 var configLoader = require('./lib/configLoader.js');
 var config = configLoader.loadYaml('config');
@@ -22,41 +24,39 @@ var transporter = require('./lib/transporter.js')(config.accounts, config.adapte
 var messageId = 0;
 
 // listen message queue
-var amqp = require('amqp');
-var connection = amqp.createConnection(config.mq.connection);
+var amqp = require('amqplib');
+var open = amqp.connect(config.mq.connection);
 debug('Connecting to RabbitMQ server...');
 
-connection.on('ready', function () {
+open.then(function (connection) {
   info('Server connected.');
-  // connect queue
-  debug('Connecting to queue (queue name=%s, exchange name=%s)', config.mq.queue.name, config.mq.exchange.name);
-  connection.queue(config.mq.queue.name, config.mq.queue.options, function (q) {
-    // bind queue
-    info('Queue connected.');
-    q.bind(config.mq.exchange.name);
-    info('Begin receiving messages...');
-    // listen messages
-    q.subscribe({ack: true}, function (message, headers, deliveryInfo, ack) {
-      var id = ++messageId;
-      var msg = {};
-      try {
-        msg = JSON.parse(message.data.toString());
-      } catch (ignore) {
+  return connection.createChannel();
+}).then(function (ch) {
+  info('Channel connected.');
+
+  ch.assertQueue(config.mq.queue.name, config.mq.queue.options);
+  ch.prefetch(1);
+
+  info('Accepting messages from queue \'%s\'...', config.mq.queue.name);
+  ch.consume(config.mq.queue.name, function (msg) {
+    var id = ++messageId;
+    var data = {};
+    try {
+      data = JSON.parse(msg.content.toString());
+    } catch (ignore) {
+    }
+    if (data.to === undefined || data.subject === undefined || data.html === undefined) {
+      ch.ack(msg);
+      return;
+    }
+    debug('#%d\tREQ: to = %s, subject = %s, html = (omitted)', id, data.to, data.subject);
+    transporter.send(config.nick, data.to, data.subject, data.html, function (err, res) {
+      if (err) {
+        error('#%d\tRES Failed: %s', id, err.message);
+      } else {
+        debug('#%d\tRES: ', id, res);
       }
-      if (msg.to === undefined || msg.subject === undefined || msg.html === undefined) {
-        ack.acknowledge();
-        return;
-      }
-      debug('#%d\tREQ: to = %s, subject = %s, html = (omitted)', id, msg.to, msg.subject);
-      transporter.send(config.nick, msg.to, msg.subject, msg.html, function (err, info) {
-        if (err) {
-          error('#%d\tRES Failed: %s', id, err.message);
-        } else {
-          debug('#%d\tRES: ', id, info);
-        }
-        // ack immedtaly after we sent a message
-        ack.acknowledge();
-      });
+      ch.ack(msg);
     });
-  });
+  }, { noAck: false });
 });
