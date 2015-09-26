@@ -28,15 +28,22 @@ var amqp = require('amqplib');
 var open = amqp.connect(config.mq.connection);
 debug('Connecting to RabbitMQ server...');
 
+var ch;
+
 open.then(function (connection) {
   info('Server connected.');
   return connection.createChannel();
-}).then(function (ch) {
+}).then(function (channel) {
   info('Channel connected.');
-
-  ch.assertQueue(config.mq.queue.name, config.mq.queue.options);
+  ch = channel;
+  return ch.assertExchange(config.mq.exchange.name, config.mq.exchange.type, config.mq.exchange.options);
+}).then(function () {
+  info('Exchange declared, name = %s, type = %s, options = %j.', config.mq.exchange.name, config.mq.exchange.type, config.mq.exchange.options, {});
+  return ch.assertQueue(config.mq.queue.name, config.mq.queue.options);
+}).then(function () {
+  info('Queue declared, name = %s, options = %j.', config.mq.queue.name, config.mq.queue.options, {});
+  ch.bindQueue(config.mq.queue.name, config.mq.exchange.name, config.mq.binding.name);
   ch.prefetch(1);
-
   info('Accepting messages from queue \'%s\'...', config.mq.queue.name);
   ch.consume(config.mq.queue.name, function (msg) {
     var id = ++messageId;

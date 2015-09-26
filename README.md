@@ -11,6 +11,18 @@ SSE 网站邮件发送服务，目前只支持对接一个邮件服务商。
 - RabbitMQ
 - Redis
 
+## 安装库依赖
+
+```bash
+npm install
+```
+
+## 启动服务
+
+```bash
+npm start
+```
+
 ## 说明
 
 mailer 从 RabbitMQ 中取数据，发送邮件，再将发送情况记录到 Redis 中（记录的 TTL 为 5 天）。
@@ -95,18 +107,6 @@ function send($to, $subject, $html) {
         true,       // durable
         false       // auto_delete
     );
-    $channel->queue_declare(
-        'mail',     // queue name
-        false,      // passive
-        true,       // durable
-        false,      // exclusive
-        false,      // auto_delete
-        false,      // nowait
-        new \PhpAmqpLib\Wire\AMQPTable([
-            'x-max-priority' => 5
-        ])
-    );
-    $channel->queue_bind('mail', 'sse', 'mail');
     $channel->basic_publish(new \PhpAmqpLib\Message\AMQPMessage(json_encode([
         'to' => $to,
         'subject' => $subject,
