@@ -1,0 +1,18 @@
+nick: "同济软院通知"
+stdLogLevel: debug
+mq:
+  connection: amqp://USERNAME:PASSWORD@localhost:5672
+  exchange:
+    name: sse
+    type: direct
+    options:
+      durable: true
+      autoDelete: false
+  binding:
+    name: mail
+  queue:
+    name: mail
+    options:
+      durable: true
+      autoDelete: false
+      maxPriority: 5

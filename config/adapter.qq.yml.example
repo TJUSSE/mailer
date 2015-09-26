@@ -1,0 +1,6 @@
+serviceCode: QQex
+limitations:
+  - [ 1,      second  ]   # allow one request per second
+  - [ 30,     minute  ]
+  - [ 400,    hour    ]
+  - [ 2000,   day     ]
